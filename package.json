@@ -1,0 +1,20 @@
+{
+  "name": "deenguard",
+  "version": "1.0.0",
+  "description": "Islamic Protection App - Monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "backend",
+    "shared/*"
+  ],
+  "scripts": {
+    "backend:start": "cd backend && npm run start:dev",
+    "backend:build": "cd backend && npm run build",
+    "mobile:build": "cd apps/mobile_app && flutter build apk",
+    "import:blocklist": "node scripts/import_blocklist.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
