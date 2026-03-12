@@ -9,7 +9,6 @@ import 'features/auth/bloc/auth_bloc.dart';
 import 'features/dashboard/bloc/dashboard_bloc.dart';
 import 'features/blocking/bloc/blocking_bloc.dart';
 import 'features/settings/bloc/settings_bloc.dart';
-import 'features/auth/presentation/pages/login_page.dart';
 import 'features/dashboard/presentation/pages/dashboard_page.dart';
 
 void main() async {
@@ -71,19 +70,10 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is AuthAuthenticated) {
-          // Navigate to Dashboard
+        if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const DashboardScreen()),
           );
-        } else if (state is AuthUnauthenticated) {
-          // Navigate to Login/Auth page
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-          );
-        } else if (state is AuthError) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       child: Scaffold(

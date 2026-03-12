@@ -21,7 +21,14 @@ class BlockingBloc extends Bloc<BlockingEvent, BlockingState> {
       LoadBlockingStatus event, Emitter<BlockingState> emit) async {
     emit(BlockingLoading());
     try {
-      final isVpnActive = StorageService.getBool('vpn_active') ?? false;
+      bool? isVpnActive = StorageService.getBool('vpn_active');
+      
+      // Default to false if not set (first run — protection starts disabled)
+      if (isVpnActive == null) {
+        isVpnActive = false;
+        await StorageService.setBool('vpn_active', false);
+      }
+
       final isAccessibilityActive =
           StorageService.getBool('accessibility_active') ?? false;
       final localDomains = StorageService.getBlockedDomains();

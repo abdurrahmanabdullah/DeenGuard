@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../bloc/dashboard_bloc.dart';
 import '../../../blocking/bloc/blocking_bloc.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -14,13 +17,14 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
-  int _adsBlocked = 42;
-  int _sitesBlocked = 3;
+  int _adsBlocked = 0;
+  int _sitesBlocked = 0;
   Timer? _mockTimer;
 
   @override
   void initState() {
     super.initState();
+    context.read<DashboardBloc>().add(LoadDashboard());
   }
 
   @override
@@ -70,6 +74,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
               IconButton(
                 icon: const Icon(Icons.person_outline),
                 onPressed: () {},
+              ),
+              IconButton(
+                icon: const Icon(Icons.power_settings_new, color: Colors.red),
+                tooltip: 'Exit App',
+                onPressed: () async {
+                  final shouldExit = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Exit DeenGuard'),
+                      content: const Text('Are you sure you want to exit the app?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text(
+                            'Exit',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (shouldExit == true) {
+                    exit(0);
+                  }
+                },
               ),
             ],
           ),
@@ -131,15 +164,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStatusHeader() {
     return BlocBuilder<BlockingBloc, BlockingState>(
       builder: (context, state) {
-        bool isProtected = false;
+        bool isProtected = false; // Default to false — protection starts disabled
+        bool isLoading = state is BlockingLoading;
+
         if (state is BlockingStatusLoaded) {
           isProtected = state.isVpnActive;
         }
 
         return Card(
           elevation: 4,
-          color:
-              isProtected ? Theme.of(context).primaryColor : Colors.orange[700],
+          color: isProtected
+              ? AppColors.primary
+              : Colors.orange[700],
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
@@ -169,7 +205,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 4),
                       Text(
                         isProtected
-                            ? 'AdGuard DNS is actively filtering.'
+                            ? 'DeenGuard DNS is actively filtering.'
                             : 'Tap below to enable protection.',
                         style: const TextStyle(
                           color: Colors.white70,
@@ -179,16 +215,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                 ),
-                Switch(
-                  value: isProtected,
-                  activeColor: Colors.white,
-                  activeTrackColor: Colors.green[300],
-                  inactiveThumbColor: Colors.white,
-                  inactiveTrackColor: Colors.orange[400],
-                  onChanged: (value) {
-                    context.read<BlockingBloc>().add(ToggleProtection(value));
-                  },
-                ),
+                if (isLoading)
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                else
+                  Switch(
+                    value: isProtected,
+                    activeColor: Colors.white,
+                    activeTrackColor: Colors.green[300],
+                    inactiveThumbColor: Colors.white,
+                    inactiveTrackColor: Colors.orange[400],
+                    onChanged: (value) {
+                      context.read<BlockingBloc>().add(ToggleProtection(value));
+                    },
+                  ),
               ],
             ),
           ),
@@ -290,6 +336,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildStatusHeader(),
+          const SizedBox(height: 24),
           Text(
             'Threats Blocked over Time',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -301,101 +349,105 @@ class _DashboardScreenState extends State<DashboardScreen> {
             elevation: 4,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: SizedBox(
-                height: 300,
-                child: BarChart(
-                  BarChartData(
-                    alignment: BarChartAlignment.spaceAround,
-                    maxY: 20,
-                    barTouchData: BarTouchData(
-                      enabled: true,
-                      touchTooltipData: BarTouchTooltipData(
-                        getTooltipColor: (_) => Colors.blueGrey,
-                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                          return BarTooltipItem(
-                            '\${rod.toY.round()}',
-                            const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold),
-                          );
-                        },
-                      ),
-                    ),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            const days = [
-                              'Mon',
-                              'Tue',
-                              'Wed',
-                              'Thu',
-                              'Fri',
-                              'Sat',
-                              'Sun'
-                            ];
-                            if (value.toInt() >= 0 &&
-                                value.toInt() < days.length) {
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: Text(days[value.toInt()],
-                                    style: const TextStyle(fontSize: 12)),
+            child: BlocBuilder<DashboardBloc, DashboardState>(
+              builder: (context, state) {
+                if (state is DashboardLoading) {
+                  return const SizedBox(
+                    height: 300,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                List<int> threatsOverTime = [0, 0, 0, 0, 0, 0, 0];
+                if (state is DashboardLoaded) {
+                  threatsOverTime = state.threatsOverTime;
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: SizedBox(
+                    height: 300,
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: (threatsOverTime.reduce((a, b) => a > b ? a : b) +
+                                5)
+                            .toDouble(),
+                        barTouchData: BarTouchData(
+                          enabled: true,
+                          touchTooltipData: BarTouchTooltipData(
+                            getTooltipColor: (_) => Colors.blueGrey,
+                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                              return BarTooltipItem(
+                                '${rod.toY.round()}',
+                                const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
                               );
-                            }
-                            return const Text('');
-                          },
+                            },
+                          ),
+                        ),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                const days = [
+                                  'Mon',
+                                  'Tue',
+                                  'Wed',
+                                  'Thu',
+                                  'Fri',
+                                  'Sat',
+                                  'Sun'
+                                ];
+                                if (value.toInt() >= 0 &&
+                                    value.toInt() < days.length) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Text(days[value.toInt()],
+                                        style: const TextStyle(fontSize: 12)),
+                                  );
+                                }
+                                return const Text('');
+                              },
+                            ),
+                          ),
+                          leftTitles: const AxisTitles(
+                            sideTitles: SideTitles(
+                                showTitles:
+                                    false), // Hide left axis to look cleaner
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                        ),
+                        gridData: const FlGridData(show: false),
+                        borderData: FlBorderData(show: false),
+                        barGroups: List.generate(
+                          threatsOverTime.length,
+                          (index) => BarChartGroupData(
+                            x: index,
+                            barRods: [
+                              BarChartRodData(
+                                toY: threatsOverTime[index].toDouble(),
+                                color: index == threatsOverTime.length - 1
+                                    ? Theme.of(context).primaryColor
+                                    : Colors.orange,
+                                width: 20,
+                              )
+                            ],
+                          ),
                         ),
                       ),
-                      leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(
-                            showTitles:
-                                false), // Hide left axis to look cleaner
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
                     ),
-                    gridData: const FlGridData(show: false),
-                    borderData: FlBorderData(show: false),
-                    barGroups: [
-                      BarChartGroupData(x: 0, barRods: [
-                        BarChartRodData(toY: 5, color: Colors.orange, width: 20)
-                      ]),
-                      BarChartGroupData(x: 1, barRods: [
-                        BarChartRodData(toY: 8, color: Colors.orange, width: 20)
-                      ]),
-                      BarChartGroupData(x: 2, barRods: [
-                        BarChartRodData(toY: 3, color: Colors.orange, width: 20)
-                      ]),
-                      BarChartGroupData(x: 3, barRods: [
-                        BarChartRodData(
-                            toY: 12, color: Colors.orange, width: 20)
-                      ]),
-                      BarChartGroupData(x: 4, barRods: [
-                        BarChartRodData(
-                            toY: 18,
-                            color: Theme.of(context).primaryColor,
-                            width: 20)
-                      ]), // Today
-                      BarChartGroupData(x: 5, barRods: [
-                        BarChartRodData(
-                            toY: 0, color: Colors.grey[300], width: 20)
-                      ]),
-                      BarChartGroupData(x: 6, barRods: [
-                        BarChartRodData(
-                            toY: 0, color: Colors.grey[300], width: 20)
-                      ]),
-                    ],
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
           const SizedBox(height: 24),
@@ -411,17 +463,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Card(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildThreatRow('Ads & Trackers', 38, Colors.blue),
-                  const Divider(),
-                  _buildThreatRow('Adult Content', 3, Colors.red),
-                  const Divider(),
-                  _buildThreatRow('Gambling', 1, Colors.purple),
-                ],
-              ),
+            child: BlocBuilder<DashboardBloc, DashboardState>(
+              builder: (context, state) {
+                if (state is DashboardLoading) {
+                  return const SizedBox(
+                    height: 100,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                Map<String, int> threatTypes = {
+                  'Ads & Trackers': 0,
+                  'Adult Content': 0,
+                  'Gambling': 0,
+                };
+
+                if (state is DashboardLoaded) {
+                  if (state.threatTypes.isNotEmpty) {
+                    threatTypes = state.threatTypes;
+                  }
+                }
+
+                final entries = threatTypes.entries.toList();
+
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: List.generate(entries.length, (index) {
+                      final entry = entries[index];
+                      Color color = Colors.blue;
+                      if (entry.key.toLowerCase().contains('adult')) {
+                        color = Colors.red;
+                      } else if (entry.key.toLowerCase().contains('gambling')) {
+                        color = Colors.purple;
+                      }
+
+                      return Column(
+                        children: [
+                          _buildThreatRow(entry.key, entry.value, color),
+                          if (index < entries.length - 1) const Divider(),
+                        ],
+                      );
+                    }),
+                  ),
+                );
+              },
             ),
           )
         ],

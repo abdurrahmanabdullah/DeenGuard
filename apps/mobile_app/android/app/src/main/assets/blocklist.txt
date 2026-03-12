@@ -1,0 +1,57 @@
+# Sample blocklist - Ad and Tracker domains
+# You can add more domains here or use a blocklist provider
+
+# Google Ads / DoubleClick
+pagead2.googlesyndication.com
+adservice.google.com
+ads.facebook.com
+googleadservices.com
+doubleclick.net
+
+# Common Ad Networks
+adsserver.com
+adserver.com
+adtech.com
+advertising.com
+adcolony.com
+admob.com
+adnxs.com
+applovin.com
+chartboost.com
+ironsource.com
+moatads.com
+openx.net
+pubmatic.com
+rubiconproject.com
+smartadserver.com
+taboola.com
+outbrain.com
+criteo.com
+bidswitch.net
+
+# Trackers
+analytics.google.com
+google-analytics.com
+googletagmanager.com
+facebook.net
+crashlytics.com
+branch.io
+appsflyer.com
+adjust.com
+mixpanel.com
+hotjar.com
+segment.io
+amplitude.com
+
+# YouTube specific ads
+redirector.googlevideo.com
+s.youtube.com
+www.youtube.com
+
+# Common tracking domains
+2mdn.net
+admob.com
+ads.mopub.com
+ad.doubleclick.net
+adclick.g.doubleclick.net
+pagead46.l.doubleclick.net

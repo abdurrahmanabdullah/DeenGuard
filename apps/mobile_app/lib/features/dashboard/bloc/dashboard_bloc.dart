@@ -15,11 +15,14 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     emit(DashboardLoading());
     try {
       final response = await ApiService.get('/dashboard');
+      final data = response.data;
       emit(DashboardLoaded(
-        blockedDomainsCount: response.data['blockedDomainsCount'] ?? 0,
-        blockedAppsCount: response.data['blockedAppsCount'] ?? 0,
-        blocksToday: response.data['blocksToday'] ?? 0,
-        isProtectionActive: response.data['isProtectionActive'] ?? false,
+        blockedDomainsCount: data['blockedDomainsCount'] ?? 0,
+        blockedAppsCount: data['blockedAppsCount'] ?? 0,
+        blocksToday: data['blocksToday'] ?? 0,
+        isProtectionActive: data['isProtectionActive'] ?? false,
+        threatsOverTime: List<int>.from(data['threatsOverTime'] ?? [0, 0, 0, 0, 0, 0, 0]),
+        threatTypes: Map<String, int>.from(data['threatTypes'] ?? {}),
       ));
     } catch (e) {
       emit(DashboardError(e.toString()));
@@ -29,11 +32,14 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   Future<void> _onRefreshDashboard(RefreshDashboard event, Emitter<DashboardState> emit) async {
     try {
       final response = await ApiService.get('/dashboard');
+      final data = response.data;
       emit(DashboardLoaded(
-        blockedDomainsCount: response.data['blockedDomainsCount'] ?? 0,
-        blockedAppsCount: response.data['blockedAppsCount'] ?? 0,
-        blocksToday: response.data['blocksToday'] ?? 0,
-        isProtectionActive: response.data['isProtectionActive'] ?? false,
+        blockedDomainsCount: data['blockedDomainsCount'] ?? 0,
+        blockedAppsCount: data['blockedAppsCount'] ?? 0,
+        blocksToday: data['blocksToday'] ?? 0,
+        isProtectionActive: data['isProtectionActive'] ?? false,
+        threatsOverTime: List<int>.from(data['threatsOverTime'] ?? [0, 0, 0, 0, 0, 0, 0]),
+        threatTypes: Map<String, int>.from(data['threatTypes'] ?? {}),
       ));
     } catch (e) {
       emit(DashboardError(e.toString()));

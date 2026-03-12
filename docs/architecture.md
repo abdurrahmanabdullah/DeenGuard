@@ -5,11 +5,14 @@ flutter run -d zenx2250700015971
 
 Shift + R (this restarts the whole app and resets its state).
 
+//----------------key store file past in terminal
+keytool -genkey -v -keystore upload-keystore.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+
 # DeenGuard Architecture
 
 ## Overview
 
-DeenGuard is an Islamic protection application that helps users block harmful content on their Android devices. The app uses a multi-layered approach combining VPN-based DNS filtering and Android Accessibility Services for comprehensive protection.
+DeenGuard is an Islamic protection application that helps users block harmful content on their Android devices. The app uses a multi-layered approach combining VPN-based DNS filtering, local blocklists, and Android Accessibility Services for comprehensive protection.
 
 ## Architecture Layers
 
@@ -18,11 +21,15 @@ DeenGuard is an Islamic protection application that helps users block harmful co
 - **State Management**: BLoC pattern
 - **Local Storage**: Hive for offline data
 - **API Communication**: Dio HTTP client
+- **Platform Channels**: MethodChannel for Flutter ↔ Kotlin communication
 
 ### 2. Android Native Services
 
-- **VPN Service**: Local VPN for DNS-based domain filtering
-- **Accessibility Service**: App blocking and content detection
+- **VPN Service**: Split-tunnel VPN for DNS-based domain filtering
+- **Local Blocklist**: HashSet for O(1) domain lookups (5,000+ domains)
+- **Accessibility Services**:
+  - App blocking and content detection
+  - YouTube AdSkip automation
 
 ### 3. Backend (NestJS)
 
@@ -37,11 +44,14 @@ DeenGuard is an Islamic protection application that helps users block harmful co
 | State Management | flutter_bloc         |
 | Local Cache      | Hive                 |
 | Network          | Dio                  |
+| Platform Channel | MethodChannel        |
 | Backend API      | NestJS               |
 | Database         | PostgreSQL           |
 | ORM              | Prisma               |
 | VPN Filtering    | Android VpnService   |
-| App Detection    | AccessibilityService |
+| DNS Blocking     | AdGuard Family DNS   |
+| Ad Blocking      | AccessibilityService |
+| App Blocking     | AccessibilityService |
 
 ## Key Components
 
@@ -66,13 +76,16 @@ lib/
 ### Android Native Structure
 
 ```
-android_native/
-├── vpn_service/           # DNS filtering
-│   ├── DNSFilterService.kt
-│   └── BlockedDomainManager.kt
-└── accessibility_service/ # App blocking
-    ├── AppBlockService.kt
-    └── ReelDetector.kt
+android/app/src/main/kotlin/com/example/deenguard/
+├── MainActivity.kt              # MethodChannel handlers
+├── DeenGuardVpnService.kt      # VPN + local blocklist
+├── DeenGuardAdSkipService.kt   # YouTube ad auto-skip
+├── AppBlockService.kt          # App blocking
+├── ReelDetector.kt             # Content detection
+└── BlockedActivity.kt          # Block overlay screen
+
+res/xml/
+└── ad_skip_service.xml         # Accessibility service config
 ```
 
 ### Backend Structure
@@ -92,22 +105,45 @@ backend/src/
 
 ## Data Flow
 
-1. **Domain Blocking Flow**:
-   - User enables protection in app
-   - App requests VPN permission
-   - DNSFilterService intercepts DNS queries
-   - BlockedDomainManager checks against blocklist
-   - If blocked, returns NXDOMAIN response
+### 1. Domain Blocking Flow (DNS-based)
 
-2. **App Blocking Flow**:
-   - AccessibilityService monitors app launches
-   - Detects blocked app package names
-   - Shows block overlay screen
+```
+User enables protection → VPN permission → DNS queries routed through AdGuard DNS
+  ├── Family Protection DNS (94.140.14.15/15.16) - blocks adult + ads
+  └── Clean DNS (94.140.14.14/15.15) - no blocking
+```
 
-3. **Sync Flow**:
-   - App fetches blocklist from API
-   - Stores locally in Hive
-   - Updates Android native services
+### 2. Local Blocklist Flow
+
+```
+Flutter sends domains → MethodChannel → VpnService.injectBlocklist()
+  → HashSet<Domain> (O(1) lookup) → isDomainBlocked() check
+  → Assets file (blocklist.txt) can be pre-loaded
+```
+
+### 3. App Blocking Flow
+
+```
+AccessibilityService monitors app launches
+  → Detects blocked package names (e.g., com.adult.app)
+  → Shows BlockedActivity overlay
+```
+
+### 4. YouTube AdSkip Flow
+
+```
+DeenGuardAdSkipService monitors YouTube (com.google.android.youtube)
+  → Detects "Ad" / "Sponsored" text → Mutes STREAM_MUSIC
+  → Finds "Skip" button → Performs ACTION_CLICK
+  → Ad ends → Restores music volume
+```
+
+### 5. Sync Flow
+
+```
+App fetches blocklist from API → Stores in Hive
+  → Updates VPN/Accessibility services via MethodChannel
+```
 
 ## Security Considerations
 
@@ -115,34 +151,29 @@ backend/src/
 - Passwords hashed with bcrypt
 - HTTPS for all API communication
 - Local storage encryption for sensitive data
-  ////----------------------------------------------------
-  To make this project fully functional, the following would need to be done:
 
-1. Install Flutter dependencies: cd apps/mobile_app && flutter pub get
-2. Install Node dependencies: cd backend && npm install
-3. Generate Prisma client: cd backend && npx prisma generate
-4. Set up PostgreSQL database and update .env with connection string
-5. Run database migrations: npx prisma db push
-6. Create placeholder UI screens for each feature
-7. Build and test the Android native services
-   ▣ Compaction · big-pickle · 50.8s
-   Thinking: The user is asking what we did so far and I've shown them a summary. They said "Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed."
-   Looking at the "Next Steps" I listed:
-8. Install Flutter dependencies
-9. Install Node dependencies
-10. Generate Prisma client
-11. Set up PostgreSQL database
-12. Run database migrations
-13. Create placeholder UI screens
-14. Build and test Android native services
-    The most logical next step would be to either:
+## MethodChannel API
 
-- Ask the user what they want to do next
-- Or continue with one of the practical setup steps
-  Let me ask the user what they'd like to do next, since there are multiple paths forward.
-  Based on the summary, there are several next steps to make this project functional:
+### VPN Channel: `com.example.deenguard/vpn`
 
-1. Install dependencies (Flutter + Node)
-2. Set up database (PostgreSQL + Prisma)
-3. Create UI screens for the app
-4. Build/test Android services
+| Method                    | Parameters              | Description               |
+| ------------------------- | ----------------------- | ------------------------- |
+| `startVpn`                | -                       | Start VPN service         |
+| `stopVpn`                 | -                       | Stop VPN service          |
+| `setFamilyProtection`     | `enabled: bool`         | Toggle AdGuard Family DNS |
+| `setBlocklistEnabled`     | `enabled: bool`         | Enable local blocklist    |
+| `injectBlocklist`         | `domains: List<String>` | Inject 5,000+ domains     |
+| `loadBlocklistFromAssets` | `filename: String`      | Load from assets file     |
+| `getBlocklistSize`        | -                       | Get blocklist count       |
+| `getFamilyProtection`     | -                       | Get current state         |
+
+### AdSkip Channel: `com.example.deenguard/adskip`
+
+| Method                         | Parameters | Description                |
+| ------------------------------ | ---------- | -------------------------- |
+| `startAdSkipService`           | -          | Enable YouTube ad skipping |
+| `stopAdSkipService`            | -          | Disable ad skipping        |
+| `checkAccessibilityPermission` | -          | Check service permission   |
+| `openAccessibilitySettings`    | -          | Open system settings       |
+| `isAdSkipEnabled`              | -          | Get current state          |
+| `isAdPlaying`                  | -          | Check if ad is playing     |
