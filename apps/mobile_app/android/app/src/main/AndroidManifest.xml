@@ -52,7 +52,7 @@
         </service>
 
         <service
-            android:name="com.example.deenguard.DeenGuardAdSkipService"
+            android:name="com.walton.deenguard.DeenGuardAdSkipService"
             android:exported="false"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
@@ -64,7 +64,7 @@
         </service>
 
         <service
-            android:name="com.example.deenguard.AppBlockService"
+            android:name="com.walton.deenguard.AppBlockService"
             android:exported="false"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>

@@ -42,7 +42,8 @@ class StorageService {
   }
 
   static List<String> getBlockedDomains() {
-    return List<String>.from(_blockedDomainsBox.get('domains', defaultValue: <String>[]));
+    return List<String>.from(
+        _blockedDomainsBox.get('domains', defaultValue: <String>[]));
   }
 
   static Future<void> clear() async {

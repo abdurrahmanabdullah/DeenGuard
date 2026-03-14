@@ -11,7 +11,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     on<RefreshDashboard>(_onRefreshDashboard);
   }
 
-  Future<void> _onLoadDashboard(LoadDashboard event, Emitter<DashboardState> emit) async {
+  Future<void> _onLoadDashboard(
+      LoadDashboard event, Emitter<DashboardState> emit) async {
     emit(DashboardLoading());
     try {
       final response = await ApiService.get('/dashboard');
@@ -21,7 +22,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         blockedAppsCount: data['blockedAppsCount'] ?? 0,
         blocksToday: data['blocksToday'] ?? 0,
         isProtectionActive: data['isProtectionActive'] ?? false,
-        threatsOverTime: List<int>.from(data['threatsOverTime'] ?? [0, 0, 0, 0, 0, 0, 0]),
+        threatsOverTime:
+            List<int>.from(data['threatsOverTime'] ?? [0, 0, 0, 0, 0, 0, 0]),
         threatTypes: Map<String, int>.from(data['threatTypes'] ?? {}),
       ));
     } catch (e) {
@@ -29,7 +31,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     }
   }
 
-  Future<void> _onRefreshDashboard(RefreshDashboard event, Emitter<DashboardState> emit) async {
+  Future<void> _onRefreshDashboard(
+      RefreshDashboard event, Emitter<DashboardState> emit) async {
     try {
       final response = await ApiService.get('/dashboard');
       final data = response.data;
@@ -38,7 +41,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         blockedAppsCount: data['blockedAppsCount'] ?? 0,
         blocksToday: data['blocksToday'] ?? 0,
         isProtectionActive: data['isProtectionActive'] ?? false,
-        threatsOverTime: List<int>.from(data['threatsOverTime'] ?? [0, 0, 0, 0, 0, 0, 0]),
+        threatsOverTime:
+            List<int>.from(data['threatsOverTime'] ?? [0, 0, 0, 0, 0, 0, 0]),
         threatTypes: Map<String, int>.from(data['threatTypes'] ?? {}),
       ));
     } catch (e) {

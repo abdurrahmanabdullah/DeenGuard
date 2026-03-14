@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="ad_skip_service_description">DeenGuard AdSkip Service automatically skips YouTube ads and mutes audio during advertisements for a better viewing experience.</string>
-    <string name="app_block_service_description">DeenGuard App Block Service monitors and blocks access to harmful applications.</string>
+    <string name="ad_skip_service_description">DeenGuard AdSkip Service automatically skips YouTube
+        ads and mutes audio during advertisements for a better viewing experience.</string>
+    <string name="app_block_service_description">DeenGuard App Block Service monitors and blocks
+        access to harmful applications.</string>
 </resources>

@@ -7,6 +7,7 @@ abstract class BlockingState extends Equatable {
 }
 
 class BlockingInitial extends BlockingState {}
+
 class BlockingLoading extends BlockingState {}
 
 class BlockingStatusLoaded extends BlockingState {

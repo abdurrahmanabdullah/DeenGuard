@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../bloc/dashboard_bloc.dart';
 import '../../../blocking/bloc/blocking_bloc.dart';
+import 'focus_mode_page.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -83,7 +84,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     context: context,
                     builder: (ctx) => AlertDialog(
                       title: const Text('Exit DeenGuard'),
-                      content: const Text('Are you sure you want to exit the app?'),
+                      content:
+                          const Text('Are you sure you want to exit the app?'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(false),
@@ -146,7 +148,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           _buildStatusHeader(),
           const SizedBox(height: 24),
-          _buildQuickStatsCard(),
+          Text(
+            'PROTECTION',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Colors.blueGrey,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+          ),
+          const SizedBox(height: 12),
+          _buildProtectionCard(
+            title: 'Safe Internet',
+            subtitle: 'Configure DNS Safety Modes',
+            icon: Icons.public,
+            iconColor: Colors.teal[700]!,
+            backgroundColor: Colors.teal[50]!,
+            onTap: () {
+              // TODO: Navigate to DNS settings
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildProtectionCard(
+            title: 'Focus Mode',
+            subtitle: 'Block Shorts, Reels & Apps',
+            icon: Icons.timer_outlined,
+            iconColor: Colors.orange[700]!,
+            backgroundColor: Colors.orange[50]!,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FocusModePage()),
+              );
+            },
+          ),
           const SizedBox(height: 24),
           Text(
             'Recent Activity (Live Console)',
@@ -164,7 +198,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStatusHeader() {
     return BlocBuilder<BlockingBloc, BlockingState>(
       builder: (context, state) {
-        bool isProtected = false; // Default to false — protection starts disabled
+        bool isProtected =
+            false; // Default to false — protection starts disabled
         bool isLoading = state is BlockingLoading;
 
         if (state is BlockingStatusLoaded) {
@@ -173,9 +208,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         return Card(
           elevation: 4,
-          color: isProtected
-              ? AppColors.primary
-              : Colors.orange[700],
+          color: isProtected ? AppColors.primary : Colors.orange[700],
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
@@ -535,6 +568,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Text(count.toString(),
               style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildProtectionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required Color backgroundColor,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 0,
+      color: backgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: iconColor.withOpacity(0.1)),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.blueGrey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: iconColor.withOpacity(0.5)),
+            ],
+          ),
+        ),
       ),
     );
   }

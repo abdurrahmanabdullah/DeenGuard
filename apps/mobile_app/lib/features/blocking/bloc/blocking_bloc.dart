@@ -22,7 +22,7 @@ class BlockingBloc extends Bloc<BlockingEvent, BlockingState> {
     emit(BlockingLoading());
     try {
       bool? isVpnActive = StorageService.getBool('vpn_active');
-      
+
       // Default to false if not set (first run — protection starts disabled)
       if (isVpnActive == null) {
         isVpnActive = false;
