@@ -27,6 +27,7 @@ class DeenGuardAccessibilityService : AccessibilityService() {
         private const val KEY_YT_SHORTS_BLOCKED = "yt_shorts_blocked"
         private const val KEY_IG_APP_BLOCKED = "ig_app_blocked"
         private const val KEY_IG_REELS_BLOCKED = "ig_reels_blocked"
+        private const val KEY_TOTAL_HARMFUL_BLOCKED = "total_harmful_blocked"
 
         val DEFAULT_BLOCKED_PACKAGES = setOf(
             "com.example.blockedapp",
@@ -55,7 +56,9 @@ class DeenGuardAccessibilityService : AccessibilityService() {
 
         val REELS_PACKAGES = setOf(
             "com.instagram.android",
+            "com.instagram.lite",
             "com.facebook.katana",
+            "com.facebook.lite",
             "com.zhiliaoapp.musically",
             "com.google.android.youtube"
         )
@@ -169,12 +172,17 @@ class DeenGuardAccessibilityService : AccessibilityService() {
                         Log.d(TAG, "Blocked app detected: $packageName")
                         lastBlockedPackage = packageName
                         lastBlockedTime = currentTime
+                        
+                        // Increment count for app blocking too
+                        val currentCount = prefs.getInt(KEY_TOTAL_HARMFUL_BLOCKED, 0)
+                        prefs.edit().putInt(KEY_TOTAL_HARMFUL_BLOCKED, currentCount + 1).apply()
+                        
                         showBlockScreen()
                     }
                 }
                 
                 if (REELS_PACKAGES.contains(packageName)) {
-                    checkForInappropriateContent(event, packageName)
+                    handleReelsBlocking(event, packageName)
                 }
             }
         }
@@ -295,24 +303,29 @@ class DeenGuardAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun checkForInappropriateContent(event: AccessibilityEvent, packageName: String) {
+    private fun handleReelsBlocking(event: AccessibilityEvent, packageName: String) {
         val fbReelsBlocked = prefs.getBoolean(KEY_FB_REELS_BLOCKED, false)
         val ytShortsBlocked = prefs.getBoolean(KEY_YT_SHORTS_BLOCKED, false)
         val igReelsBlocked = prefs.getBoolean(KEY_IG_REELS_BLOCKED, false)
 
+        // Don't block if the entire app is already blocked
         if (blockedPackages.contains(packageName)) return
         
         val content = event.text?.joinToString(" ") ?: ""
         val contentDescription = event.contentDescription?.toString() ?: ""
         val combinedContent = "$content $contentDescription"
         
-        if (ReelDetector.isInappropriateContent(combinedContent)) {
+        // Block if it's a Reels screen OR if it contains inappropriate content
+        val isReel = ReelDetector.isReelScreen(combinedContent)
+        val isInappropriate = ReelDetector.isInappropriateContent(combinedContent)
+
+        if (isReel || isInappropriate) {
             val currentTime = System.currentTimeMillis()
             if (packageName != lastBlockedPackage || currentTime - lastBlockedTime > BLOCK_COOLDOWN) {
                 when (packageName) {
-                    "com.facebook.katana" -> if (fbReelsBlocked) blockWithLogging("Facebook Reels")
-                    "com.google.android.youtube" -> if (ytShortsBlocked) blockWithLogging("YouTube Shorts")
-                    "com.instagram.android" -> if (igReelsBlocked) blockWithLogging("Instagram Reels")
+                    "com.facebook.katana" -> if (fbReelsBlocked || isInappropriate) blockWithLogging("Facebook Reel/Short")
+                    "com.google.android.youtube" -> if (ytShortsBlocked || isInappropriate) blockWithLogging("YouTube Short")
+                    "com.instagram.android" -> if (igReelsBlocked || isInappropriate) blockWithLogging("Instagram Reel")
                 }
             }
         }
@@ -321,6 +334,11 @@ class DeenGuardAccessibilityService : AccessibilityService() {
     private fun blockWithLogging(type: String) {
         Log.d(TAG, "$type detected and blocked")
         lastBlockedTime = System.currentTimeMillis()
+        
+        // Increment the total harmful blocked count
+        val currentCount = prefs.getInt(KEY_TOTAL_HARMFUL_BLOCKED, 0)
+        prefs.edit().putInt(KEY_TOTAL_HARMFUL_BLOCKED, currentCount + 1).apply()
+        
         showBlockScreen()
     }
 

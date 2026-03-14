@@ -4,14 +4,20 @@ import '../constants/app_constants.dart';
 class StorageService {
   static late Box _box;
   static late Box _blockedDomainsBox;
+  static late Box _statsBox;
+  static late Box _activityBox;
 
   static Future<void> init() async {
     _box = await Hive.openBox(AppConstants.storageBoxName);
     _blockedDomainsBox = await Hive.openBox(AppConstants.blockedDomainsBox);
+    _statsBox = await Hive.openBox(AppConstants.statsBox);
+    _activityBox = await Hive.openBox(AppConstants.activityBox);
   }
 
   static Box get box => _box;
   static Box get blockedDomainsBox => _blockedDomainsBox;
+  static Box get statsBox => _statsBox;
+  static Box get activityBox => _activityBox;
 
   static Future<void> setString(String key, String value) async {
     await _box.put(key, value);

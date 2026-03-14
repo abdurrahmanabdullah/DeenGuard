@@ -197,6 +197,10 @@ class MainActivity : FlutterActivity() {
                         result.success(false)
                     }
                 }
+                "getBlockedCount" -> {
+                    val prefs = getSharedPreferences("deenguard_app_prefs", Context.MODE_PRIVATE)
+                    result.success(prefs.getInt("total_harmful_blocked", 0))
+                }
                 else -> result.notImplemented()
             }
         }

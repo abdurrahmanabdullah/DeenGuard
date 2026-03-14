@@ -5,6 +5,7 @@ import '../../../core/services/storage_service.dart';
 import '../../../core/services/app_block_service.dart';
 import '../../../data/models/blocked_domain_model.dart';
 import '../../../core/services/vpn_service.dart';
+import '../../../core/services/stats_service.dart';
 
 part 'blocking_event.dart';
 part 'blocking_state.dart';
@@ -61,6 +62,12 @@ class BlockingBloc extends Bloc<BlockingEvent, BlockingState> {
     try {
       if (event.enabled) {
         await VpnService.startVpn();
+        // Record an initial event to show statistics are working
+        await StatsService.recordBlock(
+          title: 'DeenGuard Protection System Online',
+          type: 'ads',
+          iconPath: '',
+        );
       } else {
         await VpnService.stopVpn();
       }

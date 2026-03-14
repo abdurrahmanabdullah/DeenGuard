@@ -13,9 +13,18 @@ object ReelDetector {
     
     private val suspiciousPatterns = listOf(
         "reels",
+        "reel",
         "trending",
         "viral",
-        "for you"
+        "for you",
+        "short",
+        "shorts",
+        "suggested for you",
+        "watch",
+        "video",
+        "facebook reels",
+        "instagram reels",
+        "youtube shorts"
     )
 
     fun isInappropriateContent(content: String): Boolean {

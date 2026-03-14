@@ -54,4 +54,13 @@ class AppBlockService {
       print("Failed to open private DNS settings: ${e.message}");
     }
   }
+
+  static Future<int> getBlockedCount() async {
+    try {
+      final int? result = await _channel.invokeMethod('getBlockedCount');
+      return result ?? 0;
+    } on PlatformException {
+      return 0;
+    }
+  }
 }

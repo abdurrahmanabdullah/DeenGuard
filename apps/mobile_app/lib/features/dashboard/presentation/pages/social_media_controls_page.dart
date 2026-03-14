@@ -3,6 +3,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocking/bloc/blocking_bloc.dart';
 import '../../../../core/services/app_block_service.dart';
 
+// ─── Color Palette ────────────────────────────────────────────────────────────
+const _bg = Color(0xFF0D1117);
+const _surface = Color(0xFF161B22);
+const _surfaceElevated = Color(0xFF1C232B);
+const _emerald = Color(0xFF00E676);
+const _textPrimary = Color(0xFFE6EDF3);
+const _textSecondary = Color(0xFF8B949E);
+const _textMuted = Color(0xFF484F58);
+const _amber = Color(0xFFFFB300);
+const _border = Color(0xFF21262D);
+const _blue = Color(0xFF58A6FF);
+
 class SocialMediaControlsPage extends StatefulWidget {
   const SocialMediaControlsPage({super.key});
 
@@ -37,199 +49,251 @@ class _SocialMediaControlsPageState extends State<SocialMediaControlsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFBFBFE),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('Social Media'),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black,
-      ),
+      backgroundColor: _bg,
       body: BlocBuilder<BlockingBloc, BlockingState>(
         builder: (context, state) {
           final settings = state is BlockingStatusLoaded
               ? state.socialMediaSettings
               : <String, bool>{};
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 16),
-                if (_checkingPermission)
-                  const LinearProgressIndicator()
-                else if (!_hasPermission)
-                  _buildPermissionWarning(),
-                if (!_hasPermission) const SizedBox(height: 16),
-                const SizedBox(height: 8),
-                _buildPlatformSection(
-                  name: 'Facebook',
-                  icon: Icons.facebook,
-                  iconColor: Colors.blue[700]!,
-                  controls: [
-                    _buildControlRow(
-                      label: 'Block Reels',
-                      icon: Icons.play_circle_outline,
-                      value: settings['fb_reels'] ?? false,
-                      onChanged: (v) {
-                        print('[DEBUG UI] fb_reels toggled to: $v');
-                        context
-                            .read<BlockingBloc>()
-                            .add(UpdateSocialMediaSetting(key: 'fb_reels', value: v));
-                      },
-                    ),
-                    _buildControlRow(
-                      label: 'Block Facebook',
-                      icon: Icons.block_flipped,
-                      value: settings['fb_app'] ?? false,
-                      onChanged: (v) {
-                        print('[DEBUG UI] fb_app toggled to: $v');
-                        context
-                            .read<BlockingBloc>()
-                            .add(UpdateSocialMediaSetting(key: 'fb_app', value: v));
-                      },
-                    ),
-                  ],
+
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 180.0,
+                floating: false,
+                pinned: true,
+                stretch: true,
+                backgroundColor: _bg,
+                elevation: 0,
+                leading: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textSecondary, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ),
-                const SizedBox(height: 16),
-                _buildPlatformSection(
-                  name: 'YouTube',
-                  icon: Icons.play_arrow_rounded,
-                  iconColor: Colors.red[600]!,
-                  controls: [
-                    _buildControlRow(
-                      label: 'Block Shorts',
-                      icon: Icons.play_arrow_outlined,
-                      value: settings['yt_shorts'] ?? false,
-                      onChanged: (v) => context
-                          .read<BlockingBloc>()
-                          .add(UpdateSocialMediaSetting(key: 'yt_shorts', value: v)),
+                flexibleSpace: FlexibleSpaceBar(
+                  centerTitle: true,
+                  title: const Text(
+                    'Social Media',
+                    style: TextStyle(
+                      color: _textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 20,
+                      letterSpacing: -0.5,
                     ),
-                    _buildControlRow(
-                      label: 'Block Youtube',
-                      icon: Icons.block_flipped,
-                      value: settings['yt_app'] ?? false,
-                      onChanged: (v) => context
-                          .read<BlockingBloc>()
-                          .add(UpdateSocialMediaSetting(key: 'yt_app', value: v)),
-                    ),
-                  ],
+                  ),
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [_bg, _surface],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: -40,
+                        bottom: -40,
+                        child: Icon(
+                          Icons.share_rounded,
+                          size: 160,
+                          color: _blue.withOpacity(0.03),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                _buildPlatformSection(
-                  name: 'Instagram',
-                  icon: Icons.camera_alt_outlined,
-                  iconColor: Colors.pink[400]!,
-                  controls: [
-                    _buildControlRow(
-                      label: 'Block Reels',
-                      icon: Icons.video_collection_outlined,
-                      value: settings['ig_reels'] ?? false,
-                      onChanged: (v) => context
-                          .read<BlockingBloc>()
-                          .add(UpdateSocialMediaSetting(key: 'ig_reels', value: v)),
-                    ),
-                    _buildControlRow(
-                      label: 'Block Instagram',
-                      icon: Icons.block_flipped,
-                      value: settings['ig_app'] ?? false,
-                      onChanged: (v) => context
-                          .read<BlockingBloc>()
-                          .add(UpdateSocialMediaSetting(key: 'ig_app', value: v)),
-                      isLast: true,
-                    ),
-                  ],
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionHeader('STATUS & PERMISSION'),
+                      const SizedBox(height: 16),
+                      if (_checkingPermission)
+                        const LinearProgressIndicator(
+                          backgroundColor: _surface,
+                          valueColor: AlwaysStoppedAnimation<Color>(_blue),
+                        )
+                      else if (!_hasPermission)
+                        _buildPermissionWarning()
+                      else
+                        _buildActiveStatusBanner(),
+                      const SizedBox(height: 24),
+                      _buildSectionHeader('PLATFORM CONTROLS'),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _buildPlatformSection(
+                      name: 'Facebook',
+                      icon: Icons.facebook_rounded,
+                      iconColor: const Color(0xFF1877F2),
+                      controls: [
+                        _buildControlRow(
+                          label: 'Block Reels',
+                          icon: Icons.play_circle_outline,
+                          value: settings['fb_reels'] ?? false,
+                          onChanged: (v) => context.read<BlockingBloc>().add(UpdateSocialMediaSetting(key: 'fb_reels', value: v)),
+                        ),
+                        _buildControlRow(
+                          label: 'Block App',
+                          icon: Icons.block_flipped,
+                          value: settings['fb_app'] ?? false,
+                          onChanged: (v) => context.read<BlockingBloc>().add(UpdateSocialMediaSetting(key: 'fb_app', value: v)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildPlatformSection(
+                      name: 'YouTube',
+                      icon: Icons.play_circle_fill_rounded,
+                      iconColor: const Color(0xFFFF0000),
+                      controls: [
+                        _buildControlRow(
+                          label: 'Block Shorts',
+                          icon: Icons.bolt_rounded,
+                          value: settings['yt_shorts'] ?? false,
+                          onChanged: (v) => context.read<BlockingBloc>().add(UpdateSocialMediaSetting(key: 'yt_shorts', value: v)),
+                        ),
+                        _buildControlRow(
+                          label: 'Block App',
+                          icon: Icons.block_flipped,
+                          value: settings['yt_app'] ?? false,
+                          onChanged: (v) => context.read<BlockingBloc>().add(UpdateSocialMediaSetting(key: 'yt_app', value: v)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildPlatformSection(
+                      name: 'Instagram',
+                      icon: Icons.camera_alt_rounded,
+                      iconColor: const Color(0xFFE4405F),
+                      controls: [
+                        _buildControlRow(
+                          label: 'Block Reels',
+                          icon: Icons.video_collection_outlined,
+                          value: settings['ig_reels'] ?? false,
+                          onChanged: (v) => context.read<BlockingBloc>().add(UpdateSocialMediaSetting(key: 'ig_reels', value: v)),
+                        ),
+                        _buildControlRow(
+                          label: 'Block App',
+                          icon: Icons.block_flipped,
+                          value: settings['ig_app'] ?? false,
+                          onChanged: (v) => context.read<BlockingBloc>().add(UpdateSocialMediaSetting(key: 'ig_app', value: v)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 40),
+                  ]),
+                ),
+              ),
+            ],
           );
         },
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(12),
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: _textMuted,
+        letterSpacing: 1.6,
+      ),
+    );
+  }
+
+  Widget _buildActiveStatusBanner() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _emerald.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _emerald.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_circle_rounded, color: _emerald, size: 20),
           ),
-          child: Icon(Icons.share_outlined, color: Colors.blue[700], size: 28),
-        ),
-        const SizedBox(width: 16),
-        const Text(
-          'Social Media Controls',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D3250),
+          const SizedBox(width: 12),
+          const Text(
+            'Protection is active',
+            style: TextStyle(fontWeight: FontWeight.w800, color: _emerald, fontSize: 16),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildPermissionWarning() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.orange[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange[200]!),
+        color: _surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _amber.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange[700]),
+              const Icon(Icons.warning_amber_rounded, color: _amber),
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Enable to block on Mobile Data',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange[900],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'To block on mobile data (not just WiFi), enable the App Block permission.',
-            style: TextStyle(fontSize: 13, color: Color(0xFF666666)),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    await AppBlockService.openAppBlockSettings();
-                    await Future.delayed(const Duration(seconds: 2));
-                    _checkPermissions();
-                  },
-                  icon: const Icon(Icons.settings, size: 18),
-                  label: const Text('Enable Permission'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange[600],
-                    foregroundColor: Colors.white,
-                  ),
-                ),
+              const Text(
+                'Action Required',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: _textPrimary),
               ),
             ],
           ),
           const SizedBox(height: 8),
           const Text(
-            'For browser blocking on mobile data, go to Settings > Network > Private DNS and enter: dns.adguard-dns.com',
-            style: TextStyle(fontSize: 12, color: Color(0xFF666666)),
+            'Enable App Block permission to restrict apps on mobile data.',
+            style: TextStyle(color: _textSecondary, fontSize: 13, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+                await AppBlockService.openAppBlockSettings();
+                await Future.delayed(const Duration(seconds: 2));
+                _checkPermissions();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _amber,
+                foregroundColor: _bg,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text(
+                'Enable Now',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
           ),
         ],
       ),
@@ -244,15 +308,9 @@ class _SocialMediaControlsPageState extends State<SocialMediaControlsPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surface,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: _border),
       ),
       child: Column(
         children: [
@@ -260,23 +318,29 @@ class _SocialMediaControlsPageState extends State<SocialMediaControlsPage> {
             padding: const EdgeInsets.all(20.0),
             child: Row(
               children: [
-                Icon(icon, color: iconColor, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2D3250),
-                    ),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: iconColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: _textPrimary,
                   ),
                 ),
-                Icon(Icons.keyboard_arrow_up, color: Colors.grey[400]),
+                const Spacer(),
+                const Icon(Icons.keyboard_arrow_down_rounded, color: _textMuted),
               ],
             ),
           ),
-          const Divider(height: 1),
+          const Divider(height: 1, color: _border, indent: 20, endIndent: 20),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(children: controls),
@@ -291,19 +355,18 @@ class _SocialMediaControlsPageState extends State<SocialMediaControlsPage> {
     required IconData icon,
     required bool value,
     required ValueChanged<bool> onChanged,
-    bool isLast = false,
   }) {
     return Container(
-      margin: EdgeInsets.only(bottom: isLast ? 0 : 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF5F5),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red[50]!),
+        color: _surfaceElevated.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _border.withOpacity(0.5)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.red[400], size: 22),
+          Icon(icon, color: _textMuted, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -311,17 +374,17 @@ class _SocialMediaControlsPageState extends State<SocialMediaControlsPage> {
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF424769),
+                color: _textSecondary,
               ),
             ),
           ),
-          Icon(Icons.info_outline, color: Colors.blueGrey[200], size: 18),
-          const SizedBox(width: 8),
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Colors.red[400],
-            activeTrackColor: Colors.red[100],
+            activeColor: _emerald,
+            activeTrackColor: _emerald.withOpacity(0.1),
+            inactiveThumbColor: _textMuted,
+            inactiveTrackColor: _textMuted.withOpacity(0.1),
           ),
         ],
       ),

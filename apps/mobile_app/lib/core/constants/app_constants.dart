@@ -39,4 +39,6 @@ class AppConstants {
   static const String storageBoxName = 'deenguard_box';
   static const String blockedDomainsBox = 'blocked_domains';
   static const String userPrefsBox = 'user_prefs';
+  static const String statsBox = 'stats_box';
+  static const String activityBox = 'activity_box';
 }

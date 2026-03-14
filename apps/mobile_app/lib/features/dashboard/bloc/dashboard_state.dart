@@ -16,6 +16,7 @@ class DashboardLoaded extends DashboardState {
   final bool isProtectionActive;
   final List<int> threatsOverTime;
   final Map<String, int> threatTypes;
+  final List<Map<String, dynamic>> activityFeed;
 
   const DashboardLoaded({
     required this.blockedDomainsCount,
@@ -24,6 +25,7 @@ class DashboardLoaded extends DashboardState {
     required this.isProtectionActive,
     required this.threatsOverTime,
     required this.threatTypes,
+    this.activityFeed = const [],
   });
 
   @override
@@ -34,6 +36,7 @@ class DashboardLoaded extends DashboardState {
         isProtectionActive,
         threatsOverTime,
         threatTypes,
+        activityFeed,
       ];
 }
 
