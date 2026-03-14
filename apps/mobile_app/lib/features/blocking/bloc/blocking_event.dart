@@ -30,3 +30,13 @@ class RemoveCustomDomain extends BlockingEvent {
   @override
   List<Object?> get props => [domainId];
 }
+
+class LoadSocialMediaSettings extends BlockingEvent {}
+
+class UpdateSocialMediaSetting extends BlockingEvent {
+  final String key;
+  final bool value;
+  const UpdateSocialMediaSetting({required this.key, required this.value});
+  @override
+  List<Object?> get props => [key, value];
+}

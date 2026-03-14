@@ -34,7 +34,7 @@
             android:exported="false"
             android:excludeFromRecents="true"
             android:launchMode="singleInstance"
-            android:theme="@android:style/Theme.NoDisplay" />
+            android:theme="@style/LaunchTheme" />
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
@@ -52,24 +52,16 @@
         </service>
 
         <service
-            android:name="com.walton.deenguard.DeenGuardAdSkipService"
+            android:name="com.walton.deenguard.DeenGuardAccessibilityService"
             android:exported="false"
+            android:label="@string/accessibility_service_label"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
             <meta-data
                 android:name="android.accessibilityservice"
-                android:resource="@xml/ad_skip_service" />
-        </service>
-
-        <service
-            android:name="com.walton.deenguard.AppBlockService"
-            android:exported="false"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
+                android:resource="@xml/accessibility_service_config" />
         </service>
     </application>
     <!-- Required to query activities that can process text, see:

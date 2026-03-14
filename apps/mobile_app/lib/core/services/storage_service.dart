@@ -50,4 +50,35 @@ class StorageService {
     await _box.clear();
     await _blockedDomainsBox.clear();
   }
+
+  static const String keyFbApp = 'fb_app_blocked';
+  static const String keyFbReels = 'fb_reels_blocked';
+  static const String keyYtApp = 'yt_app_blocked';
+  static const String keyYtShorts = 'yt_shorts_blocked';
+  static const String keyIgApp = 'ig_app_blocked';
+  static const String keyIgReels = 'ig_reels_blocked';
+
+  static Future<void> setSocialMediaSettings(Map<String, bool> settings) async {
+    print('[Storage] Saving settings: $settings');
+    await _box.put(keyFbApp, settings['fb_app'] ?? false);
+    await _box.put(keyFbReels, settings['fb_reels'] ?? false);
+    await _box.put(keyYtApp, settings['yt_app'] ?? false);
+    await _box.put(keyYtShorts, settings['yt_shorts'] ?? false);
+    await _box.put(keyIgApp, settings['ig_app'] ?? false);
+    await _box.put(keyIgReels, settings['ig_reels'] ?? false);
+    print('[Storage] Settings saved successfully');
+  }
+
+  static Map<String, bool> getSocialMediaSettings() {
+    final result = {
+      'fb_app': _box.get(keyFbApp, defaultValue: false) as bool,
+      'fb_reels': _box.get(keyFbReels, defaultValue: false) as bool,
+      'yt_app': _box.get(keyYtApp, defaultValue: false) as bool,
+      'yt_shorts': _box.get(keyYtShorts, defaultValue: false) as bool,
+      'ig_app': _box.get(keyIgApp, defaultValue: false) as bool,
+      'ig_reels': _box.get(keyIgReels, defaultValue: false) as bool,
+    };
+    print('[Storage] getSocialMediaSettings returned: $result');
+    return result;
+  }
 }

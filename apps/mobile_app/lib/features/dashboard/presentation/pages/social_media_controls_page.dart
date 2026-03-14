@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../blocking/bloc/blocking_bloc.dart';
+import '../../../../core/services/app_block_service.dart';
 
 class SocialMediaControlsPage extends StatefulWidget {
   const SocialMediaControlsPage({super.key});
@@ -9,15 +12,27 @@ class SocialMediaControlsPage extends StatefulWidget {
 }
 
 class _SocialMediaControlsPageState extends State<SocialMediaControlsPage> {
-  // Local state for toggles - in real app this would come from a Bloc/Storage
-  final Map<String, bool> _settings = {
-    'fb_reels': true,
-    'fb_app': true,
-    'yt_shorts': true,
-    'yt_app': true,
-    'ig_reels': true,
-    'ig_app': false,
-  };
+  bool _hasPermission = false;
+  bool _checkingPermission = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BlockingBloc>().add(LoadSocialMediaSettings());
+      _checkPermissions();
+    });
+  }
+
+  Future<void> _checkPermissions() async {
+    final hasPermission = await AppBlockService.checkAppBlockPermission();
+    if (mounted) {
+      setState(() {
+        _hasPermission = hasPermission;
+        _checkingPermission = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,74 +48,105 @@ class _SocialMediaControlsPageState extends State<SocialMediaControlsPage> {
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.black,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 24),
-            _buildPlatformSection(
-              name: 'Facebook',
-              icon: Icons.facebook,
-              iconColor: Colors.blue[700]!,
-              controls: [
-                _buildControlRow(
-                  label: 'Block Reels',
-                  icon: Icons.play_circle_outline,
-                  value: _settings['fb_reels']!,
-                  onChanged: (v) => setState(() => _settings['fb_reels'] = v),
+      body: BlocBuilder<BlockingBloc, BlockingState>(
+        builder: (context, state) {
+          final settings = state is BlockingStatusLoaded
+              ? state.socialMediaSettings
+              : <String, bool>{};
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 16),
+                if (_checkingPermission)
+                  const LinearProgressIndicator()
+                else if (!_hasPermission)
+                  _buildPermissionWarning(),
+                if (!_hasPermission) const SizedBox(height: 16),
+                const SizedBox(height: 8),
+                _buildPlatformSection(
+                  name: 'Facebook',
+                  icon: Icons.facebook,
+                  iconColor: Colors.blue[700]!,
+                  controls: [
+                    _buildControlRow(
+                      label: 'Block Reels',
+                      icon: Icons.play_circle_outline,
+                      value: settings['fb_reels'] ?? false,
+                      onChanged: (v) {
+                        print('[DEBUG UI] fb_reels toggled to: $v');
+                        context
+                            .read<BlockingBloc>()
+                            .add(UpdateSocialMediaSetting(key: 'fb_reels', value: v));
+                      },
+                    ),
+                    _buildControlRow(
+                      label: 'Block Facebook',
+                      icon: Icons.block_flipped,
+                      value: settings['fb_app'] ?? false,
+                      onChanged: (v) {
+                        print('[DEBUG UI] fb_app toggled to: $v');
+                        context
+                            .read<BlockingBloc>()
+                            .add(UpdateSocialMediaSetting(key: 'fb_app', value: v));
+                      },
+                    ),
+                  ],
                 ),
-                _buildControlRow(
-                  label: 'Block Facebook',
-                  icon: Icons.block_flipped,
-                  value: _settings['fb_app']!,
-                  onChanged: (v) => setState(() => _settings['fb_app'] = v),
+                const SizedBox(height: 16),
+                _buildPlatformSection(
+                  name: 'YouTube',
+                  icon: Icons.play_arrow_rounded,
+                  iconColor: Colors.red[600]!,
+                  controls: [
+                    _buildControlRow(
+                      label: 'Block Shorts',
+                      icon: Icons.play_arrow_outlined,
+                      value: settings['yt_shorts'] ?? false,
+                      onChanged: (v) => context
+                          .read<BlockingBloc>()
+                          .add(UpdateSocialMediaSetting(key: 'yt_shorts', value: v)),
+                    ),
+                    _buildControlRow(
+                      label: 'Block Youtube',
+                      icon: Icons.block_flipped,
+                      value: settings['yt_app'] ?? false,
+                      onChanged: (v) => context
+                          .read<BlockingBloc>()
+                          .add(UpdateSocialMediaSetting(key: 'yt_app', value: v)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildPlatformSection(
+                  name: 'Instagram',
+                  icon: Icons.camera_alt_outlined,
+                  iconColor: Colors.pink[400]!,
+                  controls: [
+                    _buildControlRow(
+                      label: 'Block Reels',
+                      icon: Icons.video_collection_outlined,
+                      value: settings['ig_reels'] ?? false,
+                      onChanged: (v) => context
+                          .read<BlockingBloc>()
+                          .add(UpdateSocialMediaSetting(key: 'ig_reels', value: v)),
+                    ),
+                    _buildControlRow(
+                      label: 'Block Instagram',
+                      icon: Icons.block_flipped,
+                      value: settings['ig_app'] ?? false,
+                      onChanged: (v) => context
+                          .read<BlockingBloc>()
+                          .add(UpdateSocialMediaSetting(key: 'ig_app', value: v)),
+                      isLast: true,
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            _buildPlatformSection(
-              name: 'YouTube',
-              icon: Icons.play_arrow_rounded,
-              iconColor: Colors.red[600]!,
-              controls: [
-                _buildControlRow(
-                  label: 'Block Shorts',
-                  icon: Icons.play_arrow_outlined,
-                  value: _settings['yt_shorts']!,
-                  onChanged: (v) => setState(() => _settings['yt_shorts'] = v),
-                ),
-                _buildControlRow(
-                  label: 'Block Youtube',
-                  icon: Icons.block_flipped,
-                  value: _settings['yt_app']!,
-                  onChanged: (v) => setState(() => _settings['yt_app'] = v),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildPlatformSection(
-              name: 'Instagram',
-              icon: Icons.camera_alt_outlined,
-              iconColor: Colors.pink[400]!,
-              controls: [
-                _buildControlRow(
-                  label: 'Block Reels',
-                  icon: Icons.video_collection_outlined,
-                  value: _settings['ig_reels']!,
-                  onChanged: (v) => setState(() => _settings['ig_reels'] = v),
-                ),
-                _buildControlRow(
-                  label: 'Block Instagram',
-                  icon: Icons.block_flipped,
-                  value: _settings['ig_app']!,
-                  onChanged: (v) => setState(() => _settings['ig_app'] = v),
-                  isLast: true,
-                ),
-              ],
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -126,6 +172,67 @@ class _SocialMediaControlsPageState extends State<SocialMediaControlsPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPermissionWarning() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange[700]),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Enable to block on Mobile Data',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange[900],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'To block on mobile data (not just WiFi), enable the App Block permission.',
+            style: TextStyle(fontSize: 13, color: Color(0xFF666666)),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await AppBlockService.openAppBlockSettings();
+                    await Future.delayed(const Duration(seconds: 2));
+                    _checkPermissions();
+                  },
+                  icon: const Icon(Icons.settings, size: 18),
+                  label: const Text('Enable Permission'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange[600],
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'For browser blocking on mobile data, go to Settings > Network > Private DNS and enter: dns.adguard-dns.com',
+            style: TextStyle(fontSize: 12, color: Color(0xFF666666)),
+          ),
+        ],
+      ),
     );
   }
 

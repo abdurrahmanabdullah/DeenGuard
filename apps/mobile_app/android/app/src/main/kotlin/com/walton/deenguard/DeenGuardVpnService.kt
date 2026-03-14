@@ -33,6 +33,9 @@ class DeenGuardVpnService : VpnService() {
         @Volatile
         var isBlocklistEnabled = false
         
+        @Volatile
+        var isVpnRunning = false
+        
         fun injectBlocklist(domains: List<String>) {
             synchronized(localBlocklist) {
                 localBlocklist.clear()
@@ -110,9 +113,17 @@ class DeenGuardVpnService : VpnService() {
         
         loadSettings()
         
+        // Check if VPN is already running
+        if (vpnInterface != null) {
+            Log.d(TAG, "VPN already running, closing old interface")
+            try {
+                vpnInterface?.close()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error closing old VPN interface", e)
+            }
+        }
+        
         try {
-            vpnInterface?.close()
-            
             val builder = Builder()
 
             builder.addAddress("10.0.0.2", 32)
@@ -130,13 +141,61 @@ class DeenGuardVpnService : VpnService() {
 
             builder.setSession("DeenGuard Protection")
 
+            // Add mtu and other settings for stability
+            builder.setMtu(1500)
+            
+            // Allow apps to bypass VPN for certain traffic
+            builder.addDisallowedApplication("com.walton.deenguard")
+
             vpnInterface = builder.establish()
-            Log.d(TAG, "VPN Interface Established - Family: $isFamilyProtectionEnabled, Blocklist: $isBlocklistEnabled")
+            isVpnRunning = vpnInterface != null
+            Log.d(TAG, "VPN Interface Established - Family: $isFamilyProtectionEnabled, Blocklist: $isBlocklistEnabled, Running: $isVpnRunning")
         } catch (e: Exception) {
             Log.e(TAG, "Error establishing VPN", e)
+            isVpnRunning = false
         }
 
         return START_STICKY
+    }
+    
+    fun restartVpn() {
+        Log.d(TAG, "Restarting VPN...")
+        try {
+            vpnInterface?.close()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error closing VPN", e)
+        }
+        
+        loadSettings()
+        
+        try {
+            val builder = Builder()
+            builder.addAddress("10.0.0.2", 32)
+            builder.addRoute("10.0.0.3", 32)
+
+            val (primaryDns, secondaryDns) = if (isFamilyProtectionEnabled) {
+                DEFAULT_DNS_PRIMARY to DEFAULT_DNS_SECONDARY
+            } else {
+                CLEAN_DNS_PRIMARY to CLEAN_DNS_SECONDARY
+            }
+            
+            builder.addDnsServer(primaryDns)
+            builder.addDnsServer(secondaryDns)
+            builder.setSession("DeenGuard Protection")
+            builder.setMtu(1500)
+            builder.addDisallowedApplication("com.walton.deenguard")
+
+            vpnInterface = builder.establish()
+            isVpnRunning = vpnInterface != null
+            Log.d(TAG, "VPN Restarted - Running: $isVpnRunning")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error restarting VPN", e)
+            isVpnRunning = false
+        }
+    }
+    
+    fun isVpnConnected(): Boolean {
+        return isVpnRunning
     }
     
     private fun loadSettings() {
@@ -150,21 +209,23 @@ class DeenGuardVpnService : VpnService() {
         try {
             vpnInterface?.close()
             vpnInterface = null
+            isVpnRunning = false
             Log.d(TAG, "VPN Interface closed manually")
         } catch (e: Exception) {
             Log.e(TAG, "Error closing VPN interface", e)
         }
         stopSelf()
     }
+    
+    override fun onRevoke() {
+        super.onRevoke()
+        isVpnRunning = false
+        Log.d(TAG, "VPN permission revoked")
+    }
 
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "VPN Service Destroyed")
-        try {
-            vpnInterface?.close()
-            vpnInterface = null
-        } catch (e: Exception) {
-            Log.e(TAG, "Error closing VPN interface", e)
-        }
+        // Don't set isVpnRunning to false on destroy - it might be a config change
     }
 }

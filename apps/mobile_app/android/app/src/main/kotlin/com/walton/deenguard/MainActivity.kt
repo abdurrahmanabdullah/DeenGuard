@@ -7,6 +7,7 @@ import android.content.ServiceConnection
 import android.net.VpnService
 import android.os.IBinder
 import android.provider.Settings
+import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -14,6 +15,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.walton.deenguard/vpn"
     private val AD_SKIP_CHANNEL = "com.walton.deenguard/adskip"
+    private val APP_BLOCK_CHANNEL = "com.walton.deenguard/appblock"
     
     private var vpnService: DeenGuardVpnService? = null
     private var isVpnBound = false
@@ -81,6 +83,19 @@ class MainActivity : FlutterActivity() {
                     DeenGuardVpnService.injectBlocklistFromAssets(this, filename)
                     result.success(DeenGuardVpnService.getBlocklistSize())
                 }
+                "checkVpnStatus" -> {
+                    result.success(DeenGuardVpnService.isVpnRunning)
+                }
+                "restartVpn" -> {
+                    try {
+                        val intent = Intent(this, DeenGuardVpnService::class.java)
+                        startService(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Error restarting VPN", e)
+                        result.success(false)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
@@ -88,22 +103,22 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AD_SKIP_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "startAdSkipService" -> {
-                    if (checkMyAccessibilityServiceEnabled(DeenGuardAdSkipService::class.java)) {
-                        DeenGuardAdSkipService.setEnabled(true)
+                    if (checkMyAccessibilityServiceEnabled(DeenGuardAccessibilityService::class.java)) {
+                        DeenGuardAccessibilityService.setAdSkipEnabled(true)
                         result.success(true)
                     } else {
                         result.success(false)
                     }
                 }
                 "stopAdSkipService" -> {
-                    DeenGuardAdSkipService.setEnabled(false)
+                    DeenGuardAccessibilityService.setAdSkipEnabled(false)
                     result.success(true)
                 }
                 "isAdSkipEnabled" -> {
-                    result.success(DeenGuardAdSkipService.isServiceEnabled)
+                    result.success(DeenGuardAccessibilityService.isAdSkipEnabled)
                 }
                 "isAdPlaying" -> {
-                    result.success(DeenGuardAdSkipService.isAdPlaying)
+                    result.success(DeenGuardAccessibilityService.isAdPlaying)
                 }
                 "openAccessibilitySettings" -> {
                     val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
@@ -111,7 +126,76 @@ class MainActivity : FlutterActivity() {
                     result.success(null)
                 }
                 "checkAccessibilityPermission" -> {
-                    result.success(checkMyAccessibilityServiceEnabled(DeenGuardAdSkipService::class.java))
+                    result.success(checkMyAccessibilityServiceEnabled(DeenGuardAccessibilityService::class.java))
+                }
+                "checkAppBlockPermission" -> {
+                    result.success(checkMyAccessibilityServiceEnabled(DeenGuardAccessibilityService::class.java))
+                }
+                "openAppBlockSettings" -> {
+                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                    startActivity(intent)
+                    result.success(null)
+                }
+                "openPrivateDnsSettings" -> {
+                    try {
+                        val intent = Intent(Settings.ACTION_WIRELESS_SETTINGS)
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, APP_BLOCK_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "updateAppBlockingSettings" -> {
+                    Log.d("MainActivity", "updateAppBlockingSettings called")
+                    val fbAppBlocked = call.argument<Boolean>("fb_app_blocked") ?: false
+                    val fbReelsBlocked = call.argument<Boolean>("fb_reels_blocked") ?: false
+                    val ytAppBlocked = call.argument<Boolean>("yt_app_blocked") ?: false
+                    val ytShortsBlocked = call.argument<Boolean>("yt_shorts_blocked") ?: false
+                    val igAppBlocked = call.argument<Boolean>("ig_app_blocked") ?: false
+                    val igReelsBlocked = call.argument<Boolean>("ig_reels_blocked") ?: false
+
+                    Log.d("MainActivity", "fbAppBlocked=$fbAppBlocked, fbReelsBlocked=$fbReelsBlocked")
+
+                    val prefs = getSharedPreferences("deenguard_app_prefs", Context.MODE_PRIVATE)
+                    prefs.edit()
+                        .putBoolean("fb_app_blocked", fbAppBlocked)
+                        .putBoolean("fb_reels_blocked", fbReelsBlocked)
+                        .putBoolean("yt_app_blocked", ytAppBlocked)
+                        .putBoolean("yt_shorts_blocked", ytShortsBlocked)
+                        .putBoolean("ig_app_blocked", igAppBlocked)
+                        .putBoolean("ig_reels_blocked", igReelsBlocked)
+                        .apply()
+
+                    Log.d("MainActivity", "Settings saved to SharedPreferences")
+                    
+                    // Reload settings in DeenGuardAccessibilityService
+                    DeenGuardAccessibilityService.reloadFromPrefs(this)
+                    
+                    result.success(true)
+                }
+                "checkAppBlockPermission" -> {
+                    Log.d("MainActivity", "checkAppBlockPermission called")
+                    result.success(checkMyAccessibilityServiceEnabled(DeenGuardAccessibilityService::class.java))
+                }
+                "openAppBlockSettings" -> {
+                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                    startActivity(intent)
+                    result.success(null)
+                }
+                "openPrivateDnsSettings" -> {
+                    try {
+                        val intent = Intent(Settings.ACTION_WIRELESS_SETTINGS)
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
                 }
                 else -> result.notImplemented()
             }
