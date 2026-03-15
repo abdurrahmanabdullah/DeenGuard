@@ -216,6 +216,10 @@ class MainActivity : FlutterActivity() {
                         "instagram" to mapOf(
                             "count" to prefs.getInt("ig_usage_count", 0),
                             "ms" to prefs.getLong("ig_usage_duration", 0L)
+                        ),
+                        "whatsapp" to mapOf(
+                            "count" to prefs.getInt("wa_usage_count", 0),
+                            "ms" to prefs.getLong("wa_usage_duration", 0L)
                         )
                     )
                     result.success(stats)

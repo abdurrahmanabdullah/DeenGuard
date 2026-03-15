@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-arm64-openssl-3.0.x", "linux-musl-arm64-openssl-1.1.x"]
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String  @id @default(uuid())
+  name      String
+  firstName String? @map("first_name")
+  lastName  String? @map("last_name")
+  username  String  @unique
+  email     String  @unique
+  password  String?
+  role      String  @default("user")
+  photo     String?
+  bio       String? @db.Text
+
+  isActive Boolean @default(true) @map("is_active")
+
+  // Location and preferences
+  latitude    Float?
+  longitude   Float?
+  countryCode String? @map("country_code")
+  language    String?
+  timezone    String?
+
+  // Social authentication
+  accountProvider String? @map("account_provider")
+  socialId        String? @map("social_id")
+  googleId        String? @map("google_id")
+  googleToken     String? @map("google_token")
+
+  // IP tracking
+  signInIpAddress String? @map("sign_in_ip_address")
+  ipAddress       String? @map("ip_address")
+  ipHost          String? @map("ip_host")
+
+  // Timestamps
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("users")
+}
+model Product {
+  id        String   @id @default(uuid())
+  name      String
+  details   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("products")
+}

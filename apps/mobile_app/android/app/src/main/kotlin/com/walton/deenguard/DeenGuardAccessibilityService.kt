@@ -33,11 +33,13 @@ class DeenGuardAccessibilityService : AccessibilityService() {
         const val KEY_FB_USAGE_COUNT = "fb_usage_count"
         const val KEY_YT_USAGE_COUNT = "yt_usage_count"
         const val KEY_IG_USAGE_COUNT = "ig_usage_count"
+        const val KEY_WA_USAGE_COUNT = "wa_usage_count"
         
         // Duration Tracking Keys (in milliseconds)
         const val KEY_FB_USAGE_DURATION = "fb_usage_duration"
         const val KEY_YT_USAGE_DURATION = "yt_usage_duration"
         const val KEY_IG_USAGE_DURATION = "ig_usage_duration"
+        const val KEY_WA_USAGE_DURATION = "wa_usage_duration"
         const val KEY_TOTAL_SCREEN_TIME = "total_screen_time"
 
         val DEFAULT_BLOCKED_PACKAGES = setOf(
@@ -63,6 +65,11 @@ class DeenGuardAccessibilityService : AccessibilityService() {
         val INSTAGRAM_PACKAGES = setOf(
             "com.instagram.android",
             "com.instagram.lite"
+        )
+
+        val WHATSAPP_PACKAGES = setOf(
+            "com.whatsapp",
+            "com.whatsapp.w4b"
         )
 
         val REELS_PACKAGES = setOf(
@@ -195,6 +202,7 @@ class DeenGuardAccessibilityService : AccessibilityService() {
                     FACEBOOK_PACKAGES.contains(packageName) -> KEY_FB_USAGE_COUNT
                     YOUTUBE_PACKAGES.contains(packageName) -> KEY_YT_USAGE_COUNT
                     INSTAGRAM_PACKAGES.contains(packageName) -> KEY_IG_USAGE_COUNT
+                    WHATSAPP_PACKAGES.contains(packageName) -> KEY_WA_USAGE_COUNT
                     else -> null
                 }
                 
@@ -217,6 +225,7 @@ class DeenGuardAccessibilityService : AccessibilityService() {
             FACEBOOK_PACKAGES.contains(packageName) -> KEY_FB_USAGE_DURATION
             YOUTUBE_PACKAGES.contains(packageName) -> KEY_YT_USAGE_DURATION
             INSTAGRAM_PACKAGES.contains(packageName) -> KEY_IG_USAGE_DURATION
+            WHATSAPP_PACKAGES.contains(packageName) -> KEY_WA_USAGE_DURATION
             else -> null
         }
         

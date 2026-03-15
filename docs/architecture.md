@@ -8,6 +8,13 @@ Shift + R (this restarts the whole app and resets its state).
 //----------------key store file past in terminal
 keytool -genkey -v -keystore upload-keystore.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
 
+
+<!-- #backend  -->
+
+npx prisma generate
+
+then backend is ready 
+
 # DeenGuard Architecture
 
 ## Overview

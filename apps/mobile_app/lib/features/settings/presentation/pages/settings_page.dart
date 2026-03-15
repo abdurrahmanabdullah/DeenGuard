@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../../../../core/services/app_block_service.dart';
 
 // ─── Color Palette ────────────────────────────────────────────────────────────
@@ -40,6 +42,51 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _sendReport() async {
+    const String backendUrl = 'http://192.168.2.247:5000/api/reports/send'; // Updated to your real IP for physical phone
+    print('[DEBUG] Attempting to send report to: $backendUrl');
+    
+    setState(() => _isLoading = true);
+    try {
+      final response = await http.post(
+        Uri.parse(backendUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(_usageStats),
+      ).timeout(const Duration(seconds: 10));
+
+      print('[DEBUG] Response status: ${response.statusCode}');
+      print('[DEBUG] Response body: ${response.body}');
+
+      if (mounted) {
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Report sent successfully!'),
+              backgroundColor: _emerald,
+            ),
+          );
+        } else {
+          throw Exception('Backend returned ${response.statusCode}: ${response.body}');
+        }
+      }
+    } catch (e) {
+      print('[ERROR] Failed to send report: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sending report: $e'),
+            backgroundColor: _coral,
+            duration: const Duration(seconds: 10),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   String _formatDuration(int ms) {
     if (ms <= 0) return "0m";
     final Duration duration = Duration(milliseconds: ms);
@@ -76,6 +123,8 @@ class _SettingsPageState extends State<SettingsPage> {
               _buildAppUsageSection('youtube', 'YouTube', Icons.play_circle_fill_rounded, const Color(0xFFFF0000), _blue, totalMs),
               const SizedBox(height: 32),
               _buildAppUsageSection('instagram', 'Instagram', Icons.camera_alt_rounded, const Color(0xFFE4405F), _emerald, totalMs),
+              const SizedBox(height: 32),
+              _buildAppUsageSection('whatsapp', 'WhatsApp', Icons.chat_bubble_rounded, const Color(0xFF25D366), _emerald, totalMs),
             ],
             const SizedBox(height: 60),
             _buildFooterInfo(),
@@ -119,6 +168,22 @@ class _SettingsPageState extends State<SettingsPage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            ElevatedButton.icon(
+              onPressed: _isLoading ? null : _sendReport,
+              icon: const Icon(Icons.send_rounded, size: 16),
+              label: const Text("Send Report"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _emerald.withOpacity(0.1),
+                foregroundColor: _emerald,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: _emerald, width: 1),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             const Text(
               "% of Day on Phone",
               style: TextStyle(
