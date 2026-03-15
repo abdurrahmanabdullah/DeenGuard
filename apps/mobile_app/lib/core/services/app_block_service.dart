@@ -63,4 +63,14 @@ class AppBlockService {
       return 0;
     }
   }
+
+  static Future<Map<String, dynamic>> getUsageStats() async {
+    try {
+      final Map<dynamic, dynamic>? result = await _channel.invokeMethod('getUsageStats');
+      if (result == null) return {};
+      return Map<String, dynamic>.from(result);
+    } on PlatformException {
+      return {};
+    }
+  }
 }

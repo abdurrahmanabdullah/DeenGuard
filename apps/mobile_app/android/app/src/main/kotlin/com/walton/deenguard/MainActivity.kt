@@ -201,6 +201,25 @@ class MainActivity : FlutterActivity() {
                     val prefs = getSharedPreferences("deenguard_app_prefs", Context.MODE_PRIVATE)
                     result.success(prefs.getInt("total_harmful_blocked", 0))
                 }
+                "getUsageStats" -> {
+                    val prefs = getSharedPreferences("deenguard_app_prefs", Context.MODE_PRIVATE)
+                    val stats = mapOf(
+                        "total_ms" to prefs.getLong("total_screen_time", 0L),
+                        "facebook" to mapOf(
+                            "count" to prefs.getInt("fb_usage_count", 0),
+                            "ms" to prefs.getLong("fb_usage_duration", 0L)
+                        ),
+                        "youtube" to mapOf(
+                            "count" to prefs.getInt("yt_usage_count", 0),
+                            "ms" to prefs.getLong("yt_usage_duration", 0L)
+                        ),
+                        "instagram" to mapOf(
+                            "count" to prefs.getInt("ig_usage_count", 0),
+                            "ms" to prefs.getLong("ig_usage_duration", 0L)
+                        )
+                    )
+                    result.success(stats)
+                }
                 else -> result.notImplemented()
             }
         }

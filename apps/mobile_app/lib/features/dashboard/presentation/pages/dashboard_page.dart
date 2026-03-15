@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/dashboard_bloc.dart';
 import '../../../blocking/bloc/blocking_bloc.dart';
 import 'focus_mode_page.dart';
+import '../../../settings/presentation/pages/settings_page.dart';
 
 // ─── Color Palette ────────────────────────────────────────────────────────────
 const _bg = Color(0xFF0D1117);
@@ -168,36 +169,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     return BlocBuilder<DashboardBloc, DashboardState>(
       builder: (context, state) {
         if (_selectedIndex == 1) return _buildStatisticsView(state);
-        if (_selectedIndex == 2) return _buildComingSoon('Settings');
+        if (_selectedIndex == 2) return const SettingsPage();
         return _buildProtectionView(state);
       },
     );
   }
 
-  Widget _buildComingSoon(String label) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-                color: _surfaceElevated, shape: BoxShape.circle),
-            child: const Icon(Icons.construction_rounded,
-                color: _textMuted, size: 36),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            '$label Coming Soon',
-            style: const TextStyle(
-                color: _textSecondary,
-                fontSize: 16,
-                fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildProtectionView(DashboardState state) {
     return SingleChildScrollView(

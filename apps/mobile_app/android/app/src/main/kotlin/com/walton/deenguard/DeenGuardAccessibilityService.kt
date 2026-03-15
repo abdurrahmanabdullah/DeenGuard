@@ -27,7 +27,18 @@ class DeenGuardAccessibilityService : AccessibilityService() {
         private const val KEY_YT_SHORTS_BLOCKED = "yt_shorts_blocked"
         private const val KEY_IG_APP_BLOCKED = "ig_app_blocked"
         private const val KEY_IG_REELS_BLOCKED = "ig_reels_blocked"
-        private const val KEY_TOTAL_HARMFUL_BLOCKED = "total_harmful_blocked"
+        const val KEY_TOTAL_HARMFUL_BLOCKED = "total_harmful_blocked"
+
+        // Usage Tracking Keys
+        const val KEY_FB_USAGE_COUNT = "fb_usage_count"
+        const val KEY_YT_USAGE_COUNT = "yt_usage_count"
+        const val KEY_IG_USAGE_COUNT = "ig_usage_count"
+        
+        // Duration Tracking Keys (in milliseconds)
+        const val KEY_FB_USAGE_DURATION = "fb_usage_duration"
+        const val KEY_YT_USAGE_DURATION = "yt_usage_duration"
+        const val KEY_IG_USAGE_DURATION = "ig_usage_duration"
+        const val KEY_TOTAL_SCREEN_TIME = "total_screen_time"
 
         val DEFAULT_BLOCKED_PACKAGES = setOf(
             "com.example.blockedapp",
@@ -116,6 +127,8 @@ class DeenGuardAccessibilityService : AccessibilityService() {
     }
 
     private lateinit var prefs: SharedPreferences
+    private var lastActivePackage: String? = null
+    private var lastActiveStartTime: Long = 0L
     private var lastBlockedPackage: String? = null
     
     // Ad Skipping fields
@@ -160,6 +173,71 @@ class DeenGuardAccessibilityService : AccessibilityService() {
         if (packageName == YOUTUBE_PACKAGE) {
             handleAdSkipping(event)
         }
+
+        // 3. Usage Tracking Logic
+        handleUsageTracking(event, packageName)
+    }
+
+    private fun handleUsageTracking(event: AccessibilityEvent, packageName: String) {
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            val currentTime = System.currentTimeMillis()
+            
+            // If we are leaving a tracked app, record its duration
+            if (lastActivePackage != null && lastActivePackage != packageName) {
+                recordDuration(lastActivePackage!!, currentTime - lastActiveStartTime)
+            }
+
+            if (packageName != lastActivePackage && packageName != "com.walton.deenguard") {
+                lastActivePackage = packageName
+                lastActiveStartTime = currentTime
+                
+                val countKey = when {
+                    FACEBOOK_PACKAGES.contains(packageName) -> KEY_FB_USAGE_COUNT
+                    YOUTUBE_PACKAGES.contains(packageName) -> KEY_YT_USAGE_COUNT
+                    INSTAGRAM_PACKAGES.contains(packageName) -> KEY_IG_USAGE_COUNT
+                    else -> null
+                }
+                
+                countKey?.let {
+                    val currentCount = prefs.getInt(it, 0)
+                    prefs.edit().putInt(it, currentCount + 1).apply()
+                    Log.d(TAG, "Launched $packageName, count: ${currentCount + 1}")
+                }
+            } else if (packageName == "com.walton.deenguard") {
+                // If user returns to our app, clear lastActivePackage so we don't track our own time
+                lastActivePackage = null
+            }
+        }
+    }
+
+    private fun recordDuration(packageName: String, durationMs: Long) {
+        if (durationMs <= 0) return
+        
+        val durationKey = when {
+            FACEBOOK_PACKAGES.contains(packageName) -> KEY_FB_USAGE_DURATION
+            YOUTUBE_PACKAGES.contains(packageName) -> KEY_YT_USAGE_DURATION
+            INSTAGRAM_PACKAGES.contains(packageName) -> KEY_IG_USAGE_DURATION
+            else -> null
+        }
+        
+        val editor = prefs.edit()
+        
+        // Track app-specific duration
+        durationKey?.let {
+            val currentDuration = prefs.getLong(it, 0L)
+            editor.putLong(it, currentDuration + durationMs)
+            Log.d(TAG, "Added $durationMs ms to $packageName duration")
+        }
+        
+        // Track total system-wide screen time (only for apps we are interested in or all apps?)
+        // The user screenshot shows "Today's 2h 52m" as total time. 
+        // We'll track total time spent in any foreground app (excluding system UI if possible)
+        if (packageName != "com.android.systemui") {
+            val totalTime = prefs.getLong(KEY_TOTAL_SCREEN_TIME, 0L)
+            editor.putLong(KEY_TOTAL_SCREEN_TIME, totalTime + durationMs)
+        }
+        
+        editor.apply()
     }
 
     private fun handleAppBlocking(event: AccessibilityEvent, packageName: String) {
